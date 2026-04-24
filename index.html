@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shape Up — Interactive Book Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body, #root { background: #000; min-height: 100vh; }
+  body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+  button { font-family: inherit; }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: #000; }
+  ::-webkit-scrollbar-thumb { background: #2a2a4a; border-radius: 3px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script>
+const e = React.createElement;
+const { useState, useRef } = React;
+
+const BOOK_DATA = {
+  parts: [
+    {
+      title: "Shaping", partNum: 1, color: "#E85D26",
+      chapters: [
+        { id: "principles", title: "Principles of Shaping", num: 2,
+          summary: "Shaping is the pre-work done before a project is given to a team. It operates at the right level of abstraction — not too concrete (like wireframes) and not too vague (like just words). Shaped work has three key properties: it's **rough** (leaving room for the team's creativity), it's **solved** (the main elements connect together), and it's **bounded** (it tells the team where to stop). Shaping is creative, integrative work done behind closed doors by generalists who combine design thinking, technical literacy, and strategic judgment. It runs on a separate track from building — shapers work privately while teams build previously shaped work.",
+          keyTakeaways: ["Wireframes are too concrete; words are too abstract","Shaped work is rough, solved, and bounded","Shaping requires design, technical, and strategic skills","Shaping and building happen on two parallel tracks"] },
+        { id: "boundaries", title: "Set Boundaries", num: 3,
+          summary: "Before diving into solutions, set boundaries by defining the **appetite** — how much time this idea is worth. An appetite is not an estimate; estimates start with a design and end with a number, while appetites start with a number and end with a design. There are two sizes: **Small Batch** (1–2 weeks for a small team) and **Big Batch** (a full six weeks). The key principle is **fixed time, variable scope**: the deadline is firm, but what gets built can flex. \"Good\" is always relative to your constraints. The default response to new ideas should be a soft \"no\" — \"Interesting. Maybe some day.\" — to keep options open without committing prematurely.",
+          keyTakeaways: ["Appetite = time budget, not an estimate","Small Batch (1-2 weeks) vs Big Batch (6 weeks)","Fixed time, variable scope","Default response to ideas: 'Interesting. Maybe some day.'"] },
+        { id: "elements", title: "Find the Elements", num: 4,
+          summary: "This chapter covers the creative work of sketching a solution at the right speed — fast enough to explore options, slow enough to be concrete. Two key techniques are used: **Breadboarding** (writing out flows using places, affordances, and connection lines — no visual design) and **Fat Marker Sketches** (rough drawings using thick markers so you can't add too much detail). The output is a set of **elements** — the building blocks of the solution — not a deliverable design. This leaves room for designers on the build team to apply their expertise. There's no conveyor belt from shaping to building; shaped work goes to the betting table first.",
+          keyTakeaways: ["Breadboarding: places, affordances, connection lines","Fat marker sketches prevent over-detailing","Output is elements, not a finished design","Leave room for the build team's creativity"] },
+        { id: "risks", title: "Risks and Rabbit Holes", num: 5,
+          summary: "Once you have a solution concept, stress-test it for hidden risks. Look for **rabbit holes** — technical unknowns or design challenges that could consume disproportionate time. Techniques include: walking through the solution slowly to find gaps, declaring things **out of bounds** (explicitly saying what you won't do), **cutting back** unnecessary complexity, and presenting the concept to technical experts for a gut-check. The goal is to **de-risk** the project before betting on it, not to eliminate every possible issue, but to remove the ones that could derail the timeline.",
+          keyTakeaways: ["Actively look for rabbit holes before committing","Declare things explicitly out of bounds","Present to technical experts for a reality check","Goal: de-risk, not eliminate all uncertainty"] },
+        { id: "pitch", title: "Write the Pitch", num: 6,
+          summary: "The pitch is the formal write-up that packages shaped work for the betting table. It has five ingredients: **1. Problem** — the raw idea or use case framed as a specific problem worth solving. **2. Appetite** — how much time you're willing to spend. **3. Solution** — presented with embedded sketches and annotated fat marker drawings so people can \"see\" it. **4. Rabbit holes** — risks you've identified and how you've addressed them. **5. No-gos** — things explicitly excluded from the scope. A well-written pitch enables decision-makers to evaluate the bet without getting into design details.",
+          keyTakeaways: ["Five ingredients: Problem, Appetite, Solution, Rabbit holes, No-gos","Use embedded sketches so people can 'see' the solution","Separate problem from solution clearly","The pitch goes to the betting table for consideration"] },
+      ],
+      quiz: [
+        { q: "What is the right level of abstraction for shaped work?", options: ["Pixel-perfect mockups","Rough but solved — not too concrete, not too vague","Just a few words describing the idea","Detailed user stories with acceptance criteria"], answer: 1 },
+        { q: "What does 'fixed time, variable scope' mean?", options: ["The deadline can move if scope increases","The scope is locked and time adjusts to fit","The time budget is firm but what gets built can flex","Both time and scope are negotiable"], answer: 2 },
+        { q: "What is an 'appetite' in Shape Up?", options: ["An estimate of how long work will take","A time budget that constrains the design of a solution","The team's enthusiasm for a project","A customer's desire for a feature"], answer: 1 },
+        { q: "What are the two shaping sketch techniques?", options: ["Wireframes and prototypes","Breadboarding and fat marker sketches","User flows and mockups","Storyboards and blueprints"], answer: 1 },
+        { q: "What are the five ingredients of a pitch?", options: ["Idea, Design, Tasks, Timeline, Team","Vision, Strategy, Tactics, Metrics, Review","Problem, Appetite, Solution, Rabbit holes, No-gos","Summary, Details, Risks, Plan, Budget"], answer: 2 },
+        { q: "What is a 'rabbit hole' in the shaping context?", options: ["A creative breakthrough idea","A technical unknown that could consume disproportionate time","A feature request from customers","A minor bug to fix later"], answer: 1 },
+      ],
+    },
+    {
+      title: "Betting", partNum: 2, color: "#2D7DD2",
+      chapters: [
+        { id: "backlogs", title: "Bets, Not Backlogs", num: 7,
+          summary: "Shape Up eliminates backlogs entirely. Backlogs are a big weight — a growing pile of stale ideas that take time to review and make you feel behind. Instead, before each six-week cycle, stakeholders pitch potential bets from whatever feels most important right now. There's no master list of prioritized work. If an idea is truly important, it will come back naturally. People keep their own informal lists, but there is no centralized backlog. This keeps the process lightweight, forward-looking, and free from the guilt of an ever-growing to-do list.",
+          keyTakeaways: ["No backlogs — they create guilt and grow stale","Important ideas naturally resurface","Pitches come from what feels important now","Decentralized lists instead of one master backlog"] },
+        { id: "betting-table", title: "The Betting Table", num: 8,
+          summary: "Work is organized into **six-week cycles** followed by a **two-week cool-down**. The cool-down gives teams breathing room — time for fixing bugs, exploring ideas, or resting. At the **betting table**, a small senior group reviews pitched projects and decides what to bet on for the next cycle. Bets have three properties: they're a **commitment** (uninterrupted time), they have a **capped downside** (the circuit breaker — if it doesn't ship in six weeks, it doesn't get an extension by default), and they keep the **slate clean** (no carrying over old work without re-shaping it). Bugs are handled through cool-down time, the betting table, or annual \"bug smash\" cycles.",
+          keyTakeaways: ["Six-week cycles + two-week cool-down","The circuit breaker: no automatic extensions","Bets = commitment of uninterrupted time","Keep the slate clean every cycle"] },
+        { id: "place-bets", title: "Place Your Bets", num: 9,
+          summary: "How you bet depends on where you are with your product. For **existing products**, follow the standard shape-bet-build flow. For **new products**, there are three phases: **R&D mode** (senior team spikes ideas, no expectation to ship), **Production mode** (formal shaping and building with broader teams, shipping means merging to codebase), and **Cleanup mode** (free-for-all before launch, fixing must-haves). At the betting table, ask five key questions: Does the problem matter? Is the appetite right? Is the solution attractive? Is this the right time? Are the right people available?",
+          keyTakeaways: ["New products go through R&D → Production → Cleanup","Five questions to evaluate bets","Always bet one cycle at a time","Match people to projects based on skills and energy"] },
+      ],
+      quiz: [
+        { q: "Why does Shape Up eliminate backlogs?", options: ["They're too hard to maintain technically","They grow stale, create guilt, and waste review time","Backlogs are only useful in waterfall","Customers don't like seeing backlogs"], answer: 1 },
+        { q: "What is the 'circuit breaker'?", options: ["A tool for debugging code","A policy that cancels projects that don't ship within the bet time","A method for splitting large projects","A technique for estimating task duration"], answer: 1 },
+        { q: "How long is a standard Shape Up cycle?", options: ["Two weeks","Four weeks","Six weeks","Eight weeks"], answer: 2 },
+        { q: "What happens during the cool-down period?", options: ["Teams start the next cycle's projects early","Teams fix bugs, explore ideas, and rest before the next cycle","Management reviews all completed work","Customers provide feedback on shipped features"], answer: 1 },
+        { q: "In R&D mode for new products, what is the expectation?", options: ["Ship a complete feature to customers","Spike and learn — no expectation to ship","Build a detailed project plan","Complete all testing and QA"], answer: 1 },
+        { q: "Which is NOT one of the five betting table questions?", options: ["Does the problem matter?","Is the appetite right?","How many story points is this?","Are the right people available?"], answer: 2 },
+      ],
+    },
+    {
+      title: "Building", partNum: 3, color: "#1B9C5A",
+      chapters: [
+        { id: "handover", title: "Hand Over Responsibility", num: 10,
+          summary: "When the cycle starts, teams are assigned whole **projects, not tasks**. Nobody plays \"taskmaster\" splitting work into tickets. The team gets the shaped pitch and full autonomy to define their own tasks and approach. \"Done\" means **deployed** — testing and QA happen within the cycle. The first few days look quiet: no tasks checked off, nothing deployed. This is the **orientation phase** where the team learns the codebase, thinks through the pitch, and finds a starting point. Managers should respect this phase and not ask for visible progress too early. Tasks are discovered through doing real work, not imagined upfront.",
+          keyTakeaways: ["Assign projects, not tasks","Done means deployed","Respect the quiet orientation phase (first ~3 days)","Discovered tasks > imagined tasks"] },
+        { id: "one-piece", title: "Get One Piece Done", num: 11,
+          summary: "Instead of building horizontal layers (all design, then all backend), teams should **integrate vertically** — picking one small slice of the project and finishing it end-to-end in the first week. This means working UI connected to working code, even if it's rough. Designers create **affordances** (input elements, buttons, data displays) rather than pixel-perfect screens. Programmers build just enough backend to make one piece interactive. The mantra: **first make it work, then make it beautiful**. This approach builds confidence, surfaces real problems early, and gives everyone something tangible to demo.",
+          keyTakeaways: ["Integrate vertically, not horizontally","Affordances before pixel-perfect screens","First make it work, then make it beautiful","Aim for something demoable in the first week"] },
+        { id: "scopes", title: "Map the Scopes", num: 12,
+          summary: "As work progresses, the team organizes tasks into **scopes** — meaningful slices of the project that can be completed independently. Scopes are named using the **language of the project** (e.g., \"Locate,\" \"Reply,\" \"Autopay\") rather than by person or discipline. Good scopes are like **layer cakes** (with both design and code tasks) rather than icebergs (where one discipline dominates invisibly). **Chowder** is a grab-bag scope for loose tasks that don't fit elsewhere — it should stay small. Nice-to-haves are marked with a **tilde (~)** to distinguish them from must-haves.",
+          keyTakeaways: ["Scopes = meaningful, independently completable slices","Name scopes using project language, not roles","Layer cakes > icebergs > chowder","Mark nice-to-haves with ~ (tilde)"] },
+        { id: "progress", title: "Show Progress", num: 13,
+          summary: "Traditional task lists and percentage-complete metrics hide uncertainty. Shape Up uses the **Hill Chart** — a curve with an **uphill** phase (figuring things out, full of unknowns) and a **downhill** phase (execution, everything is known). Each scope is plotted as a dot on the hill. Managers can see at a glance what's moving and what's stuck — without interrupting the team. A dot that doesn't move is effectively a raised hand. If a scope is stuck, it might need to be **broken apart** into smaller scopes. Teams should push the **scariest unknowns uphill first** and leave routine work for last — like the journalist's inverted pyramid.",
+          keyTakeaways: ["The Hill Chart: uphill (unknown) → downhill (known)","Stuck dots = raised hands for help","Push scariest unknowns uphill first","Break stuck scopes into smaller ones"] },
+        { id: "stop", title: "Decide When to Stop", num: 14,
+          summary: "Shipping on time means shipping something imperfect. The key mindset shift: **compare down to baseline** (what customers have today) instead of up to some perfect ideal. The fixed deadline motivates trade-offs. Scope grows naturally like grass — rather than preventing it, give teams the tools and authority to **scope hammer** it down. Ask: Is this a must-have? Could we ship without this? Cutting scope isn't lowering quality — it's making the product better at the things that matter most. QA focuses on edge cases, not core functionality (the team owns basic quality). Extensions are extremely rare and only granted when remaining work is all downhill.",
+          keyTakeaways: ["Compare down to baseline, not up to ideal","Scope hammering: aggressively cut what isn't essential","Cutting scope ≠ lowering quality","Extensions only if remaining work is all downhill"] },
+        { id: "moveon", title: "Move On", num: 15,
+          summary: "After shipping, resist the urge to react to every piece of feedback immediately. Let the storm pass — give it a few days. Stay **debt-free**: don't commit to post-launch changes that would consume your next cycle's clean slate. Raw feedback needs to be **shaped** just like any other idea before it deserves time. If something is truly important, shape it on the shaping track and bring it to the next betting table. This brings the process full circle — from shaping, to betting, to building, to shipping, and back to shaping again.",
+          keyTakeaways: ["Let post-launch feedback storms pass","Stay debt-free: don't commit to reactive changes","Raw feedback needs shaping before action","The cycle is complete: Shape → Bet → Build → Ship → Repeat"] },
+      ],
+      quiz: [
+        { q: "What does the team receive at the start of a cycle?", options: ["A list of tasks and tickets","A whole project with a shaped pitch","Wireframes and detailed specs","Daily stand-up assignments"], answer: 1 },
+        { q: "What does 'integrate vertically' mean?", options: ["Build all the backend first, then all the frontend","Pick one small slice and build it end-to-end with working UI and code","Start with the database schema","Design every screen before writing any code"], answer: 1 },
+        { q: "What is a 'scope' in Shape Up?", options: ["The total amount of work in a project","A meaningful slice of the project that can be completed independently","A department or team boundary","The permission level of a user"], answer: 1 },
+        { q: "On the Hill Chart, what does the uphill phase represent?", options: ["Execution and known work","Figuring things out with unknowns to solve","Testing and QA","Deployment and launch"], answer: 1 },
+        { q: "What does 'scope hammering' mean?", options: ["Adding more features to impress stakeholders","Aggressively cutting non-essential scope to fit the time box","Breaking the project into smaller teams","Estimating each task precisely"], answer: 1 },
+        { q: "When should a project get an extension past its deadline?", options: ["Whenever the team asks for one","When remaining work is all downhill and items are true must-haves","When customers are waiting for the feature","Never — the circuit breaker always applies"], answer: 1 },
+      ],
+    },
+  ],
+  glossary: [
+    { term: "Appetite", def: "A time budget for how much time a project is worth — not an estimate. Comes in Small Batch (1-2 weeks) or Big Batch (6 weeks)." },
+    { term: "Baseline", def: "The current reality for customers. Teams compare down to baseline to decide when something is good enough to ship." },
+    { term: "Betting Table", def: "A meeting where senior stakeholders review pitches and decide which projects to commit to for the next cycle." },
+    { term: "Breadboarding", def: "A shaping technique that sketches flows using places, affordances, and connection lines — without any visual design." },
+    { term: "Circuit Breaker", def: "The policy that projects which don't ship within the bet time don't automatically get an extension." },
+    { term: "Cool-down", def: "A two-week period between six-week cycles for fixing bugs, exploring ideas, and resting." },
+    { term: "Fat Marker Sketch", def: "A rough sketch made with a thick marker to prevent over-detailing during the shaping phase." },
+    { term: "Fixed Time, Variable Scope", def: "The principle that the time budget is firm but what gets built within it can flex." },
+    { term: "Hill Chart", def: "A visualization showing uphill (figuring out/unknowns) and downhill (execution/knowns) phases of work." },
+    { term: "Pitch", def: "A formal write-up of shaped work with five ingredients: Problem, Appetite, Solution, Rabbit holes, No-gos." },
+    { term: "Rabbit Hole", def: "A technical or design unknown that could consume disproportionate time and derail a project." },
+    { term: "Scope", def: "A meaningful, independently completable slice of a project, named in the language of the project." },
+    { term: "Scope Hammering", def: "Aggressively cutting non-essential scope to fit within the time box." },
+    { term: "Shaping", def: "The pre-work of defining a project at the right level of abstraction — rough, solved, and bounded." },
+    { term: "Six-Week Cycle", def: "The standard work cycle in Shape Up — long enough to build something meaningful, short enough to feel the deadline." },
+  ],
+};
+
+function parseBold(text) {
+  var parts = text.split("**");
+  return parts.map(function(seg, i) {
+    if (i % 2 === 1) return e("strong", { key: i, style: { color: "#e8e6e1", fontWeight: 700 } }, seg);
+    return e("span", { key: i }, seg);
+  });
+}
+
+var S = {
+  font: "'DM Sans', sans-serif",
+  serif: "'Playfair Display', Georgia, serif",
+};
+
+function HillChart() {
+  var dotsInit = [
+    { id: 1, label: "Locate", x: 75, color: "#E85D26" },
+    { id: 2, label: "Reply", x: 55, color: "#2D7DD2" },
+    { id: 3, label: "Notify", x: 30, color: "#1B9C5A" },
+  ];
+  var _s = useState(dotsInit); var dots = _s[0]; var setDots = _s[1];
+  var svgRef = useRef(null);
+  var dragging = useRef(null);
+
+  function hillY(x) { var n = x / 100; return 120 - Math.sin(n * Math.PI) * 90; }
+
+  function onDown(id) { return function(ev) { dragging.current = id; ev.target.setPointerCapture(ev.pointerId); }; }
+  function onMove(ev) {
+    if (!dragging.current || !svgRef.current) return;
+    var svg = svgRef.current;
+    var pt = svg.createSVGPoint(); pt.x = ev.clientX; pt.y = ev.clientY;
+    var svgP = pt.matrixTransform(svg.getScreenCTM().inverse());
+    var newX = Math.max(5, Math.min(95, ((svgP.x - 20) / 360) * 100));
+    setDots(function(d) { return d.map(function(dot) { return dot.id === dragging.current ? Object.assign({}, dot, { x: newX }) : dot; }); });
+  }
+  function onUp() { dragging.current = null; }
+
+  return e("div", { style: { background: "#0d0d1a", borderRadius: 16, padding: "24px 16px 16px", marginTop: 16 } },
+    e("div", { style: { fontSize: 13, color: "#8b8fa3", marginBottom: 8, fontFamily: S.font, letterSpacing: 1, textTransform: "uppercase" } }, "Interactive Hill Chart — drag the dots"),
+    e("svg", { ref: svgRef, viewBox: "0 0 400 160", style: { width: "100%", touchAction: "none" }, onPointerMove: onMove, onPointerUp: onUp },
+      e("path", { d: "M 20,130 Q 200," + (130 - 180) + " 380,130", fill: "none", stroke: "#2a2a4a", strokeWidth: "2" }),
+      e("line", { x1: 200, y1: 30, x2: 200, y2: 135, stroke: "#2a2a4a", strokeWidth: "1", strokeDasharray: "4,4" }),
+      e("text", { x: 110, y: 150, fill: "#5a5e78", fontSize: "10", textAnchor: "middle", fontFamily: S.font }, "Figuring things out"),
+      e("text", { x: 290, y: 150, fill: "#5a5e78", fontSize: "10", textAnchor: "middle", fontFamily: S.font }, "Making it happen"),
+      dots.map(function(dot) {
+        var cx = 20 + (dot.x / 100) * 360; var cy = hillY(dot.x) + 10;
+        return e("g", { key: dot.id, onPointerDown: onDown(dot.id), style: { cursor: "grab" } },
+          e("circle", { cx: cx, cy: cy, r: 14, fill: dot.color, opacity: 0.2 }),
+          e("circle", { cx: cx, cy: cy, r: 8, fill: dot.color }),
+          e("text", { x: cx, y: cy - 18, fill: dot.color, fontSize: "10", textAnchor: "middle", fontFamily: S.font, fontWeight: 600 }, dot.label)
+        );
+      })
+    )
+  );
+}
+
+function CycleViz() {
+  var items = [
+    { label: "Shape", color: "#E85D26", w: 70 },
+    { label: "Bet", color: "#2D7DD2", w: 50 },
+    { label: "Build (6 weeks)", color: "#1B9C5A", w: 180 },
+    { label: "Cool-down (2 weeks)", color: "#8b8fa3", w: 120 },
+  ];
+  return e("div", { style: { background: "#0d0d1a", borderRadius: 16, padding: "24px 16px 20px", marginTop: 16 } },
+    e("div", { style: { fontSize: 13, color: "#8b8fa3", marginBottom: 12, fontFamily: S.font, letterSpacing: 1, textTransform: "uppercase" } }, "The Shape Up Cycle"),
+    e("div", { style: { display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" } },
+      items.map(function(item, i) {
+        return e("div", { key: i, style: { display: "flex", alignItems: "center" } },
+          e("div", { style: { background: item.color, borderRadius: 8, padding: "10px 0", textAlign: "center", color: "#fff", fontSize: 12, fontFamily: S.font, fontWeight: 600, width: item.w, opacity: 0.9 } }, item.label),
+          i < 3 ? e("span", { style: { color: "#3a3e58", fontSize: 18, margin: "0 2px" } }, "→") : null
+        );
+      })
+    )
+  );
+}
+
+function App() {
+  var _v = useState("home"); var view = _v[0]; var setView = _v[1];
+  var _p = useState(null); var activePart = _p[0]; var setActivePart = _p[1];
+  var _c = useState(null); var activeChapter = _c[0]; var setActiveChapter = _c[1];
+  var _q = useState({}); var quizState = _q[0]; var setQuizState = _q[1];
+  var _qs = useState({}); var quizSubmitted = _qs[0]; var setQuizSubmitted = _qs[1];
+  var _cc = useState({}); var completed = _cc[0]; var setCompleted = _cc[1];
+
+  var totalCh = BOOK_DATA.parts.reduce(function(s, p) { return s + p.chapters.length; }, 0);
+  var doneCount = Object.keys(completed).length;
+  var progress = Math.round((doneCount / totalCh) * 100);
+
+  function markComplete(id) { setCompleted(function(p) { var n = Object.assign({}, p); n[id] = true; return n; }); }
+  function handleQuizAnswer(pi, qi, ai) { if (quizSubmitted[pi + "-" + qi]) return; setQuizState(function(s) { var n = Object.assign({}, s); n[pi + "-" + qi] = ai; return n; }); }
+  function submitQuiz(pi) { var ns = Object.assign({}, quizSubmitted); BOOK_DATA.parts[pi].quiz.forEach(function(_, qi) { ns[pi + "-" + qi] = true; }); setQuizSubmitted(ns); }
+  function isQuizDone(pi) { return quizSubmitted[pi + "-0"] === true; }
+  function getScore(pi) { var c = 0; BOOK_DATA.parts[pi].quiz.forEach(function(q, qi) { if (quizState[pi + "-" + qi] === q.answer) c++; }); return c; }
+
+  function scrollTop() { window.scrollTo(0, 0); }
+
+  // STYLES
+  var wrap = { background: "#000", minHeight: "100vh", padding: "32px 20px 60px", maxWidth: 620, margin: "0 auto", color: "#e8e6e1" };
+  var card = { background: "#0d0d1a", borderRadius: 12, border: "1px solid #1a1a2e" };
+
+  function backBtn(color, target) {
+    return e("button", { onClick: function() { setView(target || "home"); scrollTop(); }, style: { background: "none", border: "none", color: color, cursor: "pointer", fontSize: 13, fontFamily: S.font, marginBottom: 16, padding: 0 } }, "\u2190 Back to all chapters");
+  }
+
+  // HOME VIEW
+  function renderHome() {
+    return e("div", null,
+      // Hero
+      e("div", { style: { textAlign: "center", marginBottom: 40 } },
+        e("div", { style: { fontSize: 11, letterSpacing: 3, textTransform: "uppercase", color: "#E85D26", fontFamily: S.font, fontWeight: 700, marginBottom: 8 } }, "Interactive Book Guide"),
+        e("h1", { style: { fontSize: 42, fontWeight: 800, lineHeight: 1.1, margin: "0 0 12px", fontFamily: S.serif, color: "#e8e6e1" } }, "Shape Up"),
+        e("p", { style: { fontSize: 16, color: "#8b8fa3", fontFamily: S.font, maxWidth: 420, margin: "0 auto 24px" } }, "Stop Running in Circles and Ship Work that Matters"),
+        e("p", { style: { fontSize: 13, color: "#5a5e78", fontFamily: S.font } }, "by Ryan Singer \u00B7 Basecamp")
+      ),
+      // Progress
+      e("div", { style: Object.assign({}, card, { padding: 20, marginBottom: 32 }) },
+        e("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 } },
+          e("span", { style: { fontSize: 14, color: "#8b8fa3", fontFamily: S.font } }, "Your Progress"),
+          e("span", { style: { fontSize: 24, fontWeight: 800, color: "#E85D26", fontFamily: S.font } }, progress + "%")
+        ),
+        e("div", { style: { height: 6, background: "#1a1a2e", borderRadius: 3 } },
+          e("div", { style: { height: 6, background: "linear-gradient(90deg, #E85D26, #2D7DD2, #1B9C5A)", borderRadius: 3, width: progress + "%", transition: "width 0.5s" } })
+        ),
+        e("div", { style: { fontSize: 12, color: "#5a5e78", marginTop: 8, fontFamily: S.font } }, doneCount + " of " + totalCh + " chapters completed")
+      ),
+      // Parts
+      BOOK_DATA.parts.map(function(part, pIdx) {
+        return e("div", { key: pIdx, style: { marginBottom: 24 } },
+          e("div", { style: { display: "flex", alignItems: "center", gap: 12, marginBottom: 14 } },
+            e("div", { style: { width: 36, height: 36, borderRadius: 10, background: part.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 800, color: "#fff", fontFamily: S.font } }, part.partNum),
+            e("div", null,
+              e("div", { style: { fontSize: 18, fontWeight: 700, color: "#e8e6e1", fontFamily: S.serif } }, part.title),
+              e("div", { style: { fontSize: 12, color: "#5a5e78", fontFamily: S.font } }, part.chapters.length + " chapters")
+            )
+          ),
+          e("div", { style: { display: "flex", flexDirection: "column", gap: 6 } },
+            part.chapters.map(function(ch) {
+              var done = completed[ch.id];
+              return e("button", { key: ch.id, onClick: function() { setView("chapter"); setActivePart(pIdx); setActiveChapter(ch.id); scrollTop(); },
+                style: { background: done ? part.color + "12" : "#0d0d1a", border: "1px solid " + (done ? part.color + "40" : "#1a1a2e"), borderRadius: 10, padding: "12px 16px", textAlign: "left", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", transition: "all 0.2s" } },
+                e("div", { style: { display: "flex", alignItems: "center", gap: 10 } },
+                  e("span", { style: { fontSize: 11, color: "#5a5e78", fontFamily: S.font, minWidth: 28 } }, "Ch " + ch.num),
+                  e("span", { style: { fontSize: 14, color: "#c8c6c1", fontFamily: S.font, fontWeight: 500 } }, ch.title)
+                ),
+                e("div", { style: { fontSize: 16, color: done ? part.color : "#5a5e78" } }, done ? "\u2713" : "\u2192")
+              );
+            }),
+            e("button", { onClick: function() { setView("quiz"); setActivePart(pIdx); scrollTop(); },
+              style: { background: isQuizDone(pIdx) ? part.color + "15" : "transparent", border: "1px dashed " + part.color + "60", borderRadius: 10, padding: "12px 16px", textAlign: "left", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" } },
+              e("span", { style: { fontSize: 14, color: part.color, fontFamily: S.font, fontWeight: 600 } }, "\uD83D\uDCDD Part " + part.partNum + " Quiz"),
+              isQuizDone(pIdx) ? e("span", { style: { fontSize: 13, color: part.color, fontFamily: S.font } }, getScore(pIdx) + "/" + part.quiz.length) : null
+            )
+          )
+        );
+      }),
+      // Bottom nav
+      e("div", { style: { display: "flex", gap: 8, marginTop: 32 } },
+        e("button", { onClick: function() { setView("glossary"); scrollTop(); }, style: Object.assign({}, card, { flex: 1, padding: "14px 16px", cursor: "pointer", color: "#c8c6c1", fontSize: 14, fontFamily: S.font, fontWeight: 600 }) }, "\uD83D\uDCD6 Glossary"),
+        e("button", { onClick: function() { setView("hillchart"); scrollTop(); }, style: Object.assign({}, card, { flex: 1, padding: "14px 16px", cursor: "pointer", color: "#c8c6c1", fontSize: 14, fontFamily: S.font, fontWeight: 600 }) }, "\u26F0\uFE0F Hill Chart")
+      )
+    );
+  }
+
+  // CHAPTER VIEW
+  function renderChapter() {
+    var part = BOOK_DATA.parts[activePart];
+    var chapter = part.chapters.find(function(c) { return c.id === activeChapter; });
+    if (!chapter) return null;
+    var chIdx = part.chapters.findIndex(function(c) { return c.id === activeChapter; });
+    var prevCh = chIdx > 0 ? part.chapters[chIdx - 1] : null;
+    var nextCh = chIdx < part.chapters.length - 1 ? part.chapters[chIdx + 1] : null;
+
+    return e("div", null,
+      backBtn(part.color),
+      e("div", { style: { display: "inline-block", background: part.color + "20", color: part.color, fontSize: 11, fontWeight: 700, fontFamily: S.font, padding: "4px 10px", borderRadius: 6, letterSpacing: 1, textTransform: "uppercase", marginBottom: 8 } }, "Part " + part.partNum + ": " + part.title + " \u00B7 Chapter " + chapter.num),
+      e("h2", { style: { fontSize: 28, fontWeight: 800, color: "#e8e6e1", margin: "8px 0 20px", fontFamily: S.serif, lineHeight: 1.2 } }, chapter.title),
+      e("div", { style: Object.assign({}, card, { fontSize: 15, lineHeight: 1.75, color: "#b0aea8", fontFamily: S.font, padding: 20, marginBottom: 20 }) }, parseBold(chapter.summary)),
+      e("div", { style: { marginBottom: 24 } },
+        e("div", { style: { fontSize: 13, color: "#8b8fa3", fontFamily: S.font, letterSpacing: 1, textTransform: "uppercase", marginBottom: 10, fontWeight: 600 } }, "Key Takeaways"),
+        chapter.keyTakeaways.map(function(t, i) {
+          return e("div", { key: i, style: { display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 8, fontSize: 14, color: "#c8c6c1", fontFamily: S.font } },
+            e("span", { style: { color: part.color, fontWeight: 700, fontSize: 16, lineHeight: "20px" } }, "\u2023"),
+            e("span", { style: { lineHeight: "20px" } }, t)
+          );
+        })
+      ),
+      !completed[chapter.id] ?
+        e("button", { onClick: function() { markComplete(chapter.id); }, style: { width: "100%", background: part.color, border: "none", borderRadius: 10, padding: 14, cursor: "pointer", color: "#fff", fontSize: 15, fontFamily: S.font, fontWeight: 700, marginBottom: 20 } }, "Mark as Complete \u2713") :
+        e("div", { style: { textAlign: "center", padding: 14, color: part.color, fontSize: 14, fontFamily: S.font, fontWeight: 600, background: part.color + "15", borderRadius: 10, marginBottom: 20 } }, "\u2713 Completed"),
+      e("div", { style: { display: "flex", justifyContent: "space-between", gap: 8 } },
+        prevCh ? e("button", { onClick: function() { setActiveChapter(prevCh.id); scrollTop(); }, style: Object.assign({}, card, { flex: 1, padding: 12, cursor: "pointer", color: "#8b8fa3", fontSize: 13, fontFamily: S.font, textAlign: "left" }) }, "\u2190 " + prevCh.title) : e("div", { style: { flex: 1 } }),
+        nextCh ? e("button", { onClick: function() { setActiveChapter(nextCh.id); scrollTop(); }, style: Object.assign({}, card, { flex: 1, padding: 12, cursor: "pointer", color: "#8b8fa3", fontSize: 13, fontFamily: S.font, textAlign: "right" }) }, nextCh.title + " \u2192") :
+          e("button", { onClick: function() { setView("quiz"); scrollTop(); }, style: { flex: 1, background: part.color + "20", border: "1px solid " + part.color + "40", borderRadius: 10, padding: 12, cursor: "pointer", color: part.color, fontSize: 13, fontFamily: S.font, textAlign: "right", fontWeight: 600 } }, "Take the Quiz \u2192")
+      )
+    );
+  }
+
+  // QUIZ VIEW
+  function renderQuiz() {
+    var part = BOOK_DATA.parts[activePart];
+    var done = isQuizDone(activePart);
+
+    return e("div", null,
+      backBtn(part.color),
+      e("h2", { style: { fontSize: 26, fontWeight: 800, color: "#e8e6e1", margin: "0 0 6px", fontFamily: S.serif } }, "Part " + part.partNum + ": " + part.title + " Quiz"),
+      e("p", { style: { fontSize: 14, color: "#5a5e78", fontFamily: S.font, marginBottom: 24 } }, "Test your understanding — " + part.quiz.length + " questions"),
+      done ? e("div", { style: { background: getScore(activePart) === part.quiz.length ? "#1B9C5A20" : "#E85D2620", border: "1px solid " + (getScore(activePart) === part.quiz.length ? "#1B9C5A" : "#E85D26") + "40", borderRadius: 12, padding: 16, marginBottom: 24, textAlign: "center" } },
+        e("div", { style: { fontSize: 28, fontWeight: 800, color: "#e8e6e1", fontFamily: S.font } }, getScore(activePart) + "/" + part.quiz.length),
+        e("div", { style: { fontSize: 13, color: "#8b8fa3", fontFamily: S.font } },
+          getScore(activePart) === part.quiz.length ? "Perfect score! \uD83C\uDF89" :
+          getScore(activePart) >= part.quiz.length * 0.7 ? "Great job! Review the missed ones." :
+          "Keep studying — re-read the chapter summaries.")
+      ) : null,
+      part.quiz.map(function(q, qIdx) {
+        var selected = quizState[activePart + "-" + qIdx];
+        var sub = quizSubmitted[activePart + "-" + qIdx];
+        return e("div", { key: qIdx, style: Object.assign({}, card, { padding: 18, marginBottom: 12 }) },
+          e("div", { style: { fontSize: 14, fontWeight: 600, color: "#e8e6e1", marginBottom: 12, fontFamily: S.font, lineHeight: 1.5 } },
+            e("span", { style: { color: part.color, marginRight: 8 } }, (qIdx + 1) + "."), q.q),
+          q.options.map(function(opt, oIdx) {
+            var bg = "#080812", bc = "#1a1a2e", tc = "#b0aea8";
+            if (sub) {
+              if (oIdx === q.answer) { bg = "#1B9C5A20"; bc = "#1B9C5A"; tc = "#1B9C5A"; }
+              else if (oIdx === selected && oIdx !== q.answer) { bg = "#E85D2620"; bc = "#E85D26"; tc = "#E85D26"; }
+            } else if (selected === oIdx) { bg = part.color + "20"; bc = part.color; tc = part.color; }
+            return e("button", { key: oIdx, onClick: function() { handleQuizAnswer(activePart, qIdx, oIdx); },
+              style: { display: "block", width: "100%", background: bg, border: "1px solid " + bc, borderRadius: 8, padding: "10px 14px", marginBottom: 6, textAlign: "left", cursor: sub ? "default" : "pointer", color: tc, fontSize: 13, fontFamily: S.font, lineHeight: 1.5, transition: "all 0.15s" } },
+              e("span", { style: { marginRight: 8, fontWeight: 600, opacity: 0.5 } }, String.fromCharCode(65 + oIdx)), opt);
+          })
+        );
+      }),
+      !done ? e("button", { onClick: function() { submitQuiz(activePart); }, style: { width: "100%", background: part.color, border: "none", borderRadius: 10, padding: 14, cursor: "pointer", color: "#fff", fontSize: 15, fontFamily: S.font, fontWeight: 700, marginTop: 8 } }, "Submit Answers") : null
+    );
+  }
+
+  // GLOSSARY VIEW
+  function renderGlossary() {
+    return e("div", null,
+      backBtn("#E85D26"),
+      e("h2", { style: { fontSize: 26, fontWeight: 800, color: "#e8e6e1", margin: "0 0 20px", fontFamily: S.serif } }, "Glossary"),
+      BOOK_DATA.glossary.map(function(item, i) {
+        return e("div", { key: i, style: Object.assign({}, card, { padding: "14px 16px", marginBottom: 8 }) },
+          e("div", { style: { fontSize: 15, fontWeight: 700, color: "#E85D26", fontFamily: S.font, marginBottom: 4 } }, item.term),
+          e("div", { style: { fontSize: 13, color: "#b0aea8", fontFamily: S.font, lineHeight: 1.6 } }, item.def)
+        );
+      })
+    );
+  }
+
+  // HILL CHART VIEW
+  function renderHillChartView() {
+    return e("div", null,
+      backBtn("#E85D26"),
+      e("h2", { style: { fontSize: 26, fontWeight: 800, color: "#e8e6e1", margin: "0 0 8px", fontFamily: S.serif } }, "The Hill Chart"),
+      e("p", { style: { fontSize: 14, color: "#8b8fa3", fontFamily: S.font, lineHeight: 1.6, marginBottom: 4 } },
+        "Every piece of work has two phases. The ", e("strong", { style: { color: "#e8e6e1" } }, "uphill"), " phase is about figuring things out — uncertainty, unknowns, problem-solving. The ", e("strong", { style: { color: "#e8e6e1" } }, "downhill"), " phase is about execution — confidence, known steps, making it happen. Drag the dots below to see how it works."
+      ),
+      e(HillChart),
+      e(CycleViz),
+      e("div", { style: Object.assign({}, card, { padding: 18, marginTop: 16 }) },
+        e("div", { style: { fontSize: 14, fontWeight: 700, color: "#e8e6e1", marginBottom: 10, fontFamily: S.font } }, "How teams use it:"),
+        ["Plot each scope as a dot on the hill","Update positions regularly so managers can see progress","A dot that doesn't move = something might be wrong","Push scariest unknowns uphill first","If a scope is stuck, break it into smaller scopes"].map(function(t, i) {
+          return e("div", { key: i, style: { display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 6, fontSize: 13, color: "#b0aea8", fontFamily: S.font } },
+            e("span", { style: { color: "#2D7DD2", fontWeight: 700 } }, (i + 1) + "."),
+            e("span", { style: { lineHeight: "20px" } }, t)
+          );
+        })
+      )
+    );
+  }
+
+  return e("div", { style: wrap },
+    view === "home" ? renderHome() : null,
+    view === "chapter" ? renderChapter() : null,
+    view === "quiz" ? renderQuiz() : null,
+    view === "glossary" ? renderGlossary() : null,
+    view === "hillchart" ? renderHillChartView() : null
+  );
+}
+
+ReactDOM.render(e(App), document.getElementById("root"));
+</script>
+</body>
+</html>
