@@ -6,7 +6,7 @@ A single-page interactive study app based on the book *Shape Up* by Ryan Singer 
 
 Add your GitHub Pages link here after deployment:
 
-`https://YOUR-USERNAME.github.io/YOUR-REPO-NAME/`
+`https://mirora95.github.io/shape_up_book/`
 
 ## Overview
 
